@@ -279,7 +279,7 @@ void LIPMTrajectoryGenerator::generate(KDL::Trajectory_Composite & _comTraj, KDL
 void LIPMTrajectoryGenerator::generate2(KDL::Trajectory_Composite &comTraj, KDL::Trajectory_Composite &leftTraj, KDL::Trajectory_Composite &rightTraj)
 {
     /**Empezamos flexionando la piernas del robot y llevarlo a la posicion inicial ***/
-
+    double nStep=0;
     KDL::Frame rightLeg=steps[nStep];
     //nstep indica el pie que se va a mover
     KDL::Frame leftLeg=steps[nStep+1];
@@ -333,7 +333,7 @@ void LIPMTrajectoryGenerator::generate2(KDL::Trajectory_Composite &comTraj, KDL:
             singleFootTrajectory(comTraj,rightTraj,leftTraj,rightLeg,leftLeg,nStep,0.0);
 
         }
-
+    }
     // el COM esta sobre la planta del pie
     KDL::Path * pathEnterFoot3 = new KDL::Path_Line(comTraj.Pos(comTraj.Duration()),com[4], orient.Clone(), eqradius);
     KDL::VelocityProfile_Spline * profEnterFoot3= new KDL::VelocityProfile_Spline();
@@ -357,129 +357,7 @@ void LIPMTrajectoryGenerator::generate2(KDL::Trajectory_Composite &comTraj, KDL:
     return;
 
 
-
-
-    /*    KDL::Frame LIMP_COM_initialPosition(com[3]);
-        KDL::Path_Line* COM_initialPosition =new KDL::Path_Line(comTraj.Pos(comTraj.Duration()), LIMP_COM_initialPosition, orient.Clone(), eqradius);
-        KDL::VelocityProfile *profVel_COM_initialPosition=new KDL::VelocityProfile_Trap(COM_initialPosition->PathLength()/DURATION_COM_INITIAL_POSITION*2,0.1);
-        comTraj.Add(new KDL::Trajectory_Segment(COM_initialPosition,profVel_COM_initialPosition->Clone(),DURATION_COM_INITIAL_POSITION));
-        rightTraj.Add(new KDL::Trajectory_Stationary(DURATION_COM_INITIAL_POSITION, rightLeg));
-        leftTraj.Add(new KDL::Trajectory_Stationary(DURATION_COM_INITIAL_POSITION, leftLeg));
-        double before_time=0.0;
-        double phaseTime=0.0;
-        KDL::Trajectory_Composite * parcialCOMtrayectory=new KDL::Trajectory_Composite();
-        KDL::Path_Composite * pathCom1 =new KDL::Path_Composite();
-       KDL::Path_Composite* PathLegSwing;
-       double m=1;
-       for (int i = 3; i<com.size()-4; i+=1)
-       {
-          KDL::Frame COM_P1(com[i]),COM_P2(com[i+1]);
-
-          pathCom1->Add(new KDL::Path_Line(COM_P1,COM_P2, orient.Clone(), eqradius));
-
-             //0 double support
-             //-1 single support right
-             //1 single support left
-           if(phaseWalking[i]!=phaseWalking[i+1] || i==(com.size()-5)){
-
-               if(i==(com.size()-5)|| before_time==0.0)m=0.5,before_time++;
-               else m=1;
-               if(phaseWalking[i]==-1){
-
-                   double distancia_COM=pathCom1->Pos(pathCom1->PathLength()).p.x()-pathCom1->Pos(0).p.x();
-                   singleFootTrajectory(comTraj,leftTraj,rightTraj,leftLeg,rightLeg,nStep,distancia_COM);
-                   std::cout<<"----------------------------------------------right"<<comTraj.Duration()<<std::endl;
-               }else if (phaseWalking[i]==0) {
-
-                   auto path=new KDL::Path_Line(comTraj.Pos(comTraj.Duration()),pathCom1->Pos(0),orient.Clone(), eqradius);
-                   auto path2=pathCom1;
-                   pathCom1 =new KDL::Path_Composite();
-                   pathCom1->Add(path);
-                   pathCom1->Add(path2);
-                   KDL::VelocityProfile_Trap profRectDS(pathCom1->PathLength()/DEFAULT_DURATION_DS*2,0.1);
-                   KDL::Trajectory_Segment *COM_DOUBLE=new KDL::Trajectory_Segment(pathCom1,profRectDS.Clone(),DEFAULT_DURATION_DS);
-
-                   rightTraj.Add(new KDL::Trajectory_Stationary(DEFAULT_DURATION_DS, rightLeg));
-                   leftTraj.Add(new KDL::Trajectory_Stationary(DEFAULT_DURATION_DS, leftLeg));
-                   comTraj.Add(COM_DOUBLE);
-                        std::cout<<"----------------------------------------------COM"<<comTraj.Duration()<<std::endl;
-               }else{
-
-                double distancia_COM=pathCom1->Pos(pathCom1->PathLength()).p.x()-pathCom1->Pos(0).p.x();
-
-                singleFootTrajectory(comTraj,rightTraj,leftTraj,rightLeg,leftLeg,nStep,distancia_COM);
-std::cout<<"----------------------------------------------left"<<comTraj.Duration()<<std::endl;
-               }
-               pathCom1 =new KDL::Path_Composite();
-           }
-}
-
-
-    /////FASE FINAL DE LA CAMINATA/////////////////
-
-    PointEnterFoot=com[com.size()-3];
-//    std::cout<<"COM XXXXXX"<<steps[nStep].p.x()<<std::endl;
-    PointEnterFoot.p[1]-=(footSpec.width/2)*copysign(1.0,PointEnterFoot.p.y());
-//    std::cout<<"COM ANTES XXXXXX"<<comTraj.Pos(comTraj.Duration()).p.x()<<std::endl;
-    KDL::Path* pathEndStep=new KDL::Path_Line(comTraj.Pos(comTraj.Duration()),PointEnterFoot, orient.Clone(), eqradius);
-    KDL::VelocityProfile* profEndFoot = new KDL::VelocityProfile_Trap(pathEndStep->PathLength()/(DEFAULT_DURATION_DS)*2,0.1);
-    comTraj.Add(new KDL::Trajectory_Segment(pathEndStep, profEndFoot, DEFAULT_DURATION_DS));
-//    std::cout<<"rightLeg XXXXXX"<<rightLeg.p.x()<<std::endl;
-//    std::cout<<"leftLeg XXXXXX"<<leftLeg.p.x()<<std::endl;
-    rightTraj.Add(new KDL::Trajectory_Stationary(DEFAULT_DURATION_DS, rightLeg));
-    leftTraj.Add(new KDL::Trajectory_Stationary(DEFAULT_DURATION_DS, leftLeg));
-
-    bool movingLegRight=steps[nStep].p.y()<=0.0;
-    if(!movingLegRight)
-    singleFootTrajectory(comTraj,leftTraj,rightTraj,leftLeg,rightLeg,nStep,0.0);
-    else singleFootTrajectory(comTraj,rightTraj,leftTraj,rightLeg,leftLeg,nStep,0.0);
-
-    //regresamos a la posicion inicial
-    pathEndStep = new KDL::Path_Line(PointEnterFoot, com[com.size()-2], orient.Clone(), eqradius);
-    profEndFoot = new KDL::VelocityProfile_Trap(pathEndStep->PathLength()/(DEFAULT_DURATION_DS)*3,0.15);
-    comTraj.Add(new KDL::Trajectory_Segment(pathEndStep, profEndFoot, DEFAULT_DURATION_DS/2));
-    rightTraj.Add(new KDL::Trajectory_Stationary(DEFAULT_DURATION_DS/2, rightLeg));
-    leftTraj.Add(new KDL::Trajectory_Stationary(DEFAULT_DURATION_DS/2, leftLeg));
-
-    //regresamos arriba
-    comTraj.Add(new KDL::Trajectory_Segment(pathSquatUp, profSquatUp, DEFAULT_SQUAT_DURATION));
-    rightTraj.Add(new KDL::Trajectory_Stationary(DEFAULT_SQUAT_DURATION, rightLeg));
-    leftTraj.Add(new KDL::Trajectory_Stationary(DEFAULT_SQUAT_DURATION, leftLeg));
-
-
-
-    KDL::VelocityProfile_Spline a;
-    a.SetProfileDuration(0,0.05,pathSquatDown->PathLength(),0.01,10/Ts);
-//    a.SetProfileDuration(0.0,pathSquatDown->PathLength(),10.0/Ts);
-//    a.SetProfile(0.0,pathSquatDown->PathLength());
-    KDL::Trajectory_Segment prueba(pathSquatDown->Clone(),a.Clone());
-//    for(double i=0.0;i<=prueba.Duration();i+=Ts){
-//    data1 <<prueba.Pos(i).p[2]/*prueba.Vel(i).vel[2]*/ /*a.Vel(i)*/
-//      <<DELIMITADOR<<Ts*i<<DELIMITADOR<<prueba.Vel(i).vel[2]<<"\n";
-//    }
-//    std::cout<<comTraj.Duration()<<std::endl;
-//    for(double i=0.0;i<=comTraj.Duration();i+=Ts){
-//    double zmp_X=comTraj.Pos(i).p.x()-comTraj.Acc(i).vel[0]*comTraj.Pos(i).p.z()/DEFAULT_ACELERATION_GRAVITY;
-//    double zmp_Y=comTraj.Pos(i).p.y()-comTraj.Acc(i).vel[1]*comTraj.Pos(i).p.z()/DEFAULT_ACELERATION_GRAVITY;
-//    data1 <<zmp_X<< DELIMI*/TADOR<<zmp_Y<<DELIMITADOR<<i<<DELIMITADOR<<comTraj.Acc(i).vel[0]<<DELIMITADOR<<comTraj.Acc(i).vel[1]<<DELIMITADOR<<comTraj.Acc(i).vel[2]<<"\n";
-//    }
-//    {
-//        auto && log = yInfo();
-//        log << steps.size() << "steps ([x, y]):";
-
-//        for (int i = 0; i < steps.size(); i++)
-//        {
-//            const KDL::Vector & p = steps[i].p;
-//            std::ostringstream oss;
-//            oss << "[" << p.x() << " " << p.y() << "]";
-//            log << oss.str();
-//        }
-//    }
-
-
-return;
-
-}
+ }
 
 
 
